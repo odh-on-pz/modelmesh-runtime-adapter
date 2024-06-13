@@ -143,14 +143,18 @@ ARG USER=2000
 
 USER root
 
+RUN rpm -i https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+RUN --mount=type=cache,target=/root/.cache/microdnf:rw \
+    microdnf install -y hdf5-devel openssl-devel \
+     gcc gcc-c++ make cmake  automake autoconf rust go zlib-devel libjpeg-devel cargo cairo
+
 # install python to convert keras to tf
 # NOTE: tensorflow not supported on PowerPC (ppc64le) or System Z (s390x) https://github.com/tensorflow/tensorflow/issues/46181
 RUN --mount=type=cache,target=/root/.cache/microdnf:rw \
-    microdnf install --setopt=cachedir=/root/.cache/microdnf \
+    microdnf install -y --setopt=cachedir=/root/.cache/microdnf \
        gcc \
        gcc-c++ \
-       python38-devel \
-       python38 \
+       python39-devel \
     && ln -sf /usr/bin/python3 /usr/bin/python \
     && ln -sf /usr/bin/pip3 /usr/bin/pip \
     && true
@@ -161,12 +165,12 @@ ENV PIP_CACHE_DIR=/root/.cache/pip
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --upgrade pip && \
     pip install wheel && \
-    pip install grpcio && \
+    GRPC_PYTHON_BUILD_SYSTEM_OPENSSL=true pip install grpcio && \
     # pin to 3.10.0 to avoid error: libhdf5.so: cannot open shared object file: No such file or directory \
     # if not version is set, it will install the 3.11.0 version which, seems that does not have the h5py dependencies \
     # for arm yet.
     pip install h5py==3.10.0 && \
-    pip install tensorflow
+    pip install --trusted-host 10.20.177.222 --extra-index-url http://10.20.177.222:9000/ tensorflow==2.15.1
 
 USER ${USER}
 
